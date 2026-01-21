@@ -1,0 +1,86 @@
+"""
+Anonymised example.
+All organisation names, assets, paths, and internal identifiers
+have been replaced with generic placeholders.
+"""
+
+import os
+import dash
+from dash import html, dcc, Input, Output
+import dash_design_kit as ddk
+
+# Initialise Dash app with page-based routing
+app = dash.Dash(
+    __name__,
+    use_pages=True,
+    suppress_callback_exceptions=True,
+    requests_pathname_prefix=os.environ.get(
+        "DASH_REQUESTS_PATHNAME_PREFIX", "/"
+    )
+)
+server = app.server
+
+# Resolve page paths dynamically
+locations_path = dash.page_registry["pages.locations"]["relative_path"]
+routes_path = dash.page_registry["pages.routes"]["relative_path"]
+
+# Application layout
+app.layout = ddk.App([
+    dcc.Location(id="url", refresh=False),
+    dcc.Store(id="redirect-flag", data=False),
+
+    # Header / Navigation
+    html.Div(
+        children=[
+            html.Div([
+                html.Img(
+                    src="assets/logo_placeholder.png",
+                    style={"height": "40px", "marginRight": "12px"}
+                ),
+                html.H1(
+                    "Freight Analytics Dashboard",
+                    style={
+                        "color": "white",
+                        "fontSize": "22px",
+                        "margin": "0 120px 0 0"
+                    }
+                ),
+                dcc.Link(
+                    "Freight Locations",
+                    href=locations_path,
+                    style={"color": "white", "marginRight": "40px"}
+                ),
+                dcc.Link(
+                    "Freight Rail Paths",
+                    href=routes_path,
+                    style={"color": "white"}
+                ),
+            ],
+            style={"display": "flex", "alignItems": "center"})
+        ],
+        style={
+            "backgroundColor": "#008080",
+            "padding": "12px 24px",
+            "borderBottom": "2px solid white"
+        }
+    ),
+
+    # Page content
+    html.Div(dash.page_container, style={"padding": "8px"})
+])
+
+# Optional redirect safeguard on refresh
+@app.callback(
+    Output("url", "pathname", allow_duplicate=True),
+    Input("url", "pathname"),
+    Input("redirect-flag", "data"),
+    prevent_initial_call=True
+)
+def enforce_safe_redirect(pathname, redirected):
+    if pathname == "/pages/routes" and not redirected:
+        return "/"
+    return dash.no_update
+
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
